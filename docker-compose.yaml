@@ -1,0 +1,39 @@
+version: '3.7'
+
+services:
+  db:
+    image: mysql:${MYSQL_VERSION}
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      TZ: ${TZ}
+    command: ["mysqld", "--character-set-server=utf8mb4", "--collation-server=utf8mb4_unicode_ci", "--transaction-isolation=READ-COMMITTED", "--innodb-ft-min-token-size=2"]
+    volumes:
+      - mysql-data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+
+  adminer:
+    image: adminer:latest
+    environment:
+      TZ: ${TZ}
+    command: ["php", "-S", "0.0.0.0:8888"]
+    ports:
+      - "8888:8888"
+  app:
+    build:
+      dockerfile: ./docker/app/Dockerfile
+      context: .
+    command: ["./docker/app/wait-for-it.sh", "db:3306", "--", "go", "run", "main.go"]
+    volumes:
+      - .:/go/src/app
+    ports:
+      - ${APP_PORT}:${APP_PORT}
+    depends_on:
+      - db
+
+
+volumes:
+  mysql-data:
